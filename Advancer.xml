@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+<!-- Saved on Thursday, January 15, 2015, 4:59 PM -->
+<!-- MuClient version 4.84 -->
+
+<!-- Plugin "Advancer" -->
+
+<muclient>
+	<plugin
+		name="Advancer"
+		author="Kloke"
+		id="9a1abc4d5ce195e37ca196b0"
+		language="Lua"
+		purpose="Keep track of how much XP is needed to next advance target"
+		save_state="y"
+		date_written="2015-01-15 16:57:31"
+		requires="1.00"
+		version="1.9"
+	>
+		<description trim="y">
+			<![CDATA[
+				Advancer keeps track of how much XP is needed to next advance or self-taught target.
+				
+				Commands:
+				advancer help				-	Shows this text.
+				advancer clearselftaught	-	Set self taught target to nothing.
+				advancer clearguildtaught	-	Set guild taught target to nothing.
+				
+				Version History:
+				1.9		Fixed the change to self teach costs output.
+				1.8		If only one level left to teach, the next level xp amount is the same for self taught. Removed constants.lua dependency.
+				1.7		Some other stuff.
+				1.6		7 Added % of single level of guild taught.
+						Renamed variables for better readability
+				1.5		6 Check whether only 1 levels to teach and if so set next level ST cost to the same.	
+							To self teach 1 levels of adventuring.perception to yourself would cost 27297XP. Progress: 0%
+							To self teach the next level of adventuring.perception will cost 26819XP. Progress: 0%
+				1.4		5 Updated Report() to only show skills that hve target, either self or guild taught.
+				1.3		4 Tidied up the Report() layout to include guild taught number of levels to go
+				1.2		3 Set Report() to only show every few score briefs
+				1.1		2 Added guild taught in addition to self-taught.
+				1.0		1 Original version.
+				
+				TODO:
+				* Add XP remaining to target as part of progress.
+				* Add a command to generate a report - Advancer Report
+				* Add method to clear guild target, self-taught target, or both
+				* Add method to manually add a target skill and level, along with 12 required XP.
+				* Add the facility to display as either text or window or both.
+				* Add current level and bonus for skills to report.
+				* Identify which alt is on and maintain skills to learn for that character
+				
+				
+			]]>
+		</description>
+
+	</plugin>
+
+
+
+
+<!--  Triggers  -->
+
+	<triggers>
+		<trigger
+		   enabled="y"
+		   group="Advancement"
+		   match="^(?:&gt; |)Hp: (\d+) ?\((\d+)\) +(?:Gp: (\d+) ?\((\d+)\)) +(?:Xp: (\d+))($|  Burden: (\d+\%)$)*"
+		   regexp="y"
+		   send_to="12"
+		   sequence="100"
+		>
+			<send>
+				UpdateXP ((%5)) -- XP
+			</send>
+		</trigger>
+		-- It would have cost 150890 xp to teach 2 levels of magic.spells.defensive to yourself.
+		-- It would have cost 207682 xp to teach the next level of covert.manipulation.sleight-of-hand to yourself (and 1692515 xp for 8 levels).
+		<trigger
+				enabled="y"
+				group="Advancement"
+				match="^It would have cost (?P<XPCostToSelfTeachNextLevel>.*?) xp to teach the next level of (?P<SkillToSelfTeach>.*?) to yourself \(and (?P<XPCostToSelfTeachToTarget>.*?) xp for (?P<NumberOfLevelsToSelfTeach>.*?) levels\)\.$" 
+				regexp="y"
+				send_to="12"
+				sequence="100"
+				other_text_colour="green"
+				script="UpdateSelfTeachTarget"
+			>
+		</trigger>
+		--It would cost you 4070499 xp and A$508.81 to raise fighting.unarmed.grappling from level 159 to 300.
+		<trigger
+				enabled="y"
+				group="Advancement"
+				match="^It would cost you (?P<XPCostGldLrnSkillToTarget>.+?) xp and (?P<MoneyToGldLrnSkillToTarget>.+) to raise (?P<SkillToLearnFromGuild>.+) from level (?P<GuildLevelToLearnSkillFrom>.+) to (?P<GuildLevelToLearnSkillTo>.+)\.$"
+				regexp="y"
+				send_to="12"
+				sequence="100"
+				script="UpdateGuildTaughtTarget"
+			>
+		</trigger>	
+		--To teach yourself the next level of magic.spells.defensive will cost 75118 xp.
+		<trigger
+				enabled="y"
+				group="Advancement"
+				match="^To teach yourself the next level of (?P<SkillToSelfTeach>.+) will cost (?P<XPCostToSelfTeachNextLevel>.+) xp\.$"
+				regexp="y"
+				send_to="12"
+				sequence="100"
+				script="UpdateNextSelfTaughtLevel"
+			>
+		</trigger>	
+		--It won't cost you anything to stay at the same level!
+		--We can't give refund xp for regressing skills!
+		--Guild taught levels achived; remove the line from output
+		<trigger		
+				custom_colour="2"
+				enabled="y"
+				group="Advancement"
+				match="^(It won't cost you anything to stay at the same level!|We can\'t give refund xp for regressing skills\!)$"
+				regexp="y"
+				send_to="12"
+				sequence="100"
+				script="ClearSelfTaught"
+				
+				
+			>
+		</trigger>			
+	</triggers>
+	<aliases>
+			<alias
+				script="ClearSelfTaught"
+				match="advancer reset"
+				enabled="y"
+			>
+			</alias>
+			<alias
+				script="ShowPerams"
+				match="advancer show"
+				enabled="y"
+			>
+			</alias>
+			
+	</aliases>
+	
+	
+	
+
+<!--  Plugin help  -->
+
+	<aliases>
+		<alias
+			script="OnHelp"
+			match="advancer help"
+			enabled="y"
+		>
+		</alias>
+		<alias
+			script="ClearSelfTaught"
+			match="advancer clearselftaught"
+			enabled="y"
+		>
+		</alias>
+		
+	</aliases>
+
+<!--FUNCTIONS-->
+	<script>
+		<![CDATA[
+			require "serialize"
+			require "tprint"
+			Perams = {}
+			function OnHelp ()
+				world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+			end
+			
+			function Report (sName, sLine, wildcards)
+				--Note ("Debug: function Report: start.")
+				-- Display progress toward guild target if applicable and self-teach target if applicable
+				-- If neither are applicable show nothing
+				--Note ("Debug: Self Teach Report Section Started:")
+				if  (Perams.SkillToSelfTeach == "" or Perams.SkillToSelfTeach == nil or  Perams.NumberOfLevelsToSelfTeach == 0 or Perams.NumberOfLevelsToSelfTeach == nil) then
+					--Note ("Debug: No skill selected to self-teach." .. Perams.SkillToSelfTeach)
+				else
+					----Note ("Debug: Self Teach")
+					ReportString = "To self teach "
+					ReportString = ReportString .. Perams.NumberOfLevelsToSelfTeach
+					ReportString = ReportString .. " levels of " .. Perams.SkillToSelfTeach
+					ReportString = ReportString .. " would cost " .. Perams.XPCostToSelfTeachToTarget .. " xp."
+					Note (ReportString)
+					ReportString = "Progress: "
+					
+					ReportString = ReportString .. string.format("%.2f", (tonumber(Perams.XP)/tonumber(Perams.XPCostToSelfTeachToTarget)*100)) .. "\%"
+					Note (ReportString)
+					ReportString = "To self teach the next level of "
+					ReportString = ReportString .. Perams.SkillToSelfTeach
+					
+					ReportString = ReportString .. " would cost " .. Perams.XPCostToSelfTeachNextLevel .. " xp."
+					Note (ReportString)
+					ReportString = "Progress: "
+					
+					ReportString = ReportString .. string.format("%.2f", (tonumber(Perams.XP)/tonumber(Perams.XPCostToSelfTeachNextLevel)*100)) .. "\%" 
+					Note (ReportString)
+
+				end
+
+				--SkillToLearnFromGuild
+				--Note ("Debug: Guild Learn Report Section Started:")
+				if (Perams.SkillToLearnFromGuild == "" or Perams.SkillToLearnFromGuild == nil) then
+					--Note ("Debug: There are no guild taught targets")
+				else
+					--Note ("Debug: Guild Learn is " .. Perams.SkillToLearnFromGuild)
+					
+					ReportString = "To guild learn " .. Perams.NumberOfLevelsToLearnFromGuild
+					--Note ("Debug: Perams.NumberOfLevelsToLearnFromGuild: " .. Perams.NumberOfLevelsToLearnFromGuild)
+					
+					ReportString = ReportString .. " levels of " .. Perams.SkillToLearnFromGuild
+					
+					ReportString = ReportString .. " would cost " .. Perams.MoneyToGldLrnSkillToTarget .. " and " .. Perams.XPCostGldLrnSkillToTarget .. " xp."
+					
+					Note (ReportString)
+					
+					ReportString = "Progress: "
+					ReportString = ReportString .. string.format("%.2f", (tonumber(Perams.XP)/tonumber(Perams.XPCostGldLrnSkillToTarget)*100)) .. "\%" 
+					Note (ReportString)
+					SetChanged (true)
+					OnPluginSaveState ()
+				end
+				
+			end
+			
+			function UpdateXP (XP)
+				local Turn = GetVariable("Turn") or 0
+				Turn = Turn + 1
+				if (Turn >= 2) then 
+					XX = XP or 0
+					SetVariable("XP", XP)
+					Perams.XP = XP
+					Turn = 0
+					if  (Perams.SkillToSelfTeach == nil or Perams.NumberOfLevelsToSelfTeach == nil) then
+						Perams.SkillToSelfTeach = ""
+						Perams.NumberOfLevelsToSelfTeach = 0
+					else
+						if  (Perams.SkillToLearnFromGuild == nil or Perams.NumberOfLevelsToLearnFromGuild == nil) then
+							Perams.SkillToLearnFromGuild = "" Perams.NumberOfLevelsToLearnFromGuild = 0
+						else
+							Report ()
+						end -- if no guild-teach targets set
+					end -- if no self-teach targets set
+				end -- if
+				SetChanged (true)
+				OnPluginSaveState ()
+				--tprint (Perams)
+				SetVariable("Turn", Turn)
+			end
+			
+			function UpdateSelfTeachTarget (name, line, wildcards)
+				Perams.SkillToSelfTeach = wildcards.SkillToSelfTeach
+				Perams.XPCostToSelfTeachToTarget = wildcards.XPCostToSelfTeachToTarget or 0
+				Perams.NumberOfLevelsToSelfTeach = wildcards.NumberOfLevelsToSelfTeach or 0
+				Perams.XPCostToSelfTeachNextLevel = tonumber(wildcards.XPCostToSelfTeachNextLevel) or 0
+				
+				
+				if tonumber(NumberOfLevelsToSelfTeach) == 1 then
+					Perams.XPCostToSelfTeachNextLevel = tonumber(wildcards.XPCostToSelfTeachToTarget)	
+				end -- if
+				--tprint (Perams)
+				SetChanged (true)
+				OnPluginSaveState ()
+				--UpdateNextSelfTaughtLevel (Perams.SkillToSelfTeach)
+			end
+			
+			function UpdateNextSelfTaughtLevel (name, line, wildcards)
+				Perams.XPCostToSelfTeachNextLevel = tonumber(wildcards.XPCostToSelfTeachNextLevel) or 0
+				Perams.XPCostToSelfTeachToTarget = Perams.XPCostToSelfTeachNextLevel or 0
+				--Note ("Debug: Perams.XPCostToSelfTeachNextLevel" .. Perams.XPCostToSelfTeachNextLevel)
+				
+				Perams.SkillToSelfTeach = wildcards.SkillToSelfTeach
+				
+				SetChanged (true)
+				OnPluginSaveState ()
+				--tprint (Perams)
+			end				
+			
+			function ClearSelfTaught ()
+				Perams.XPCostToSelfTeachNextLevel = 0
+				Perams.SkillToSelfTeach = ""
+				SetChanged (true)
+				OnPluginSaveState ()
+				
+			end -- function ClearSelfTaught
+			
+			function UpdateGuildTaughtTarget (name, line, wildcards)
+				--Note ("Debug: UpdateGuildTaughtTarget")
+				--tprint (wildcards)
+				
+				Perams.XPCostGldLrnSkillToTarget = wildcards.XPCostGldLrnSkillToTarget or 0
+				--Note ("Debug: Perams.XPCostGldLrnSkillToTarget: " .. Perams.XPCostGldLrnSkillToTarget)
+				
+				Perams.MoneyToGldLrnSkillToTarget = wildcards.MoneyToGldLrnSkillToTarget or 0
+				--Note ("Debug: Perams.MoneyToGldLrnSkillToTarget: " .. Perams.MoneyToGldLrnSkillToTarget)
+				
+				Perams.SkillToLearnFromGuild = wildcards.SkillToLearnFromGuild or 0
+				--Note ("Debug: Perams.SkillToLearnFromGuild: " .. Perams.SkillToLearnFromGuild)
+				
+				Perams.GuildLevelToLearnSkillFrom = wildcards.GuildLevelToLearnSkillFrom or 0
+				--Note ("Debug: Perams.GuildLevelToLearnSkillFrom: " .. Perams.GuildLevelToLearnSkillFrom)
+				
+				Perams.GuildLevelToLearnSkillTo = tonumber(wildcards.GuildLevelToLearnSkillTo) or 0
+				--Note ("Debug: Perams.GuildLevelToLearnSkillTo:" .. Perams.GuildLevelToLearnSkillTo)
+								
+				Perams.NumberOfLevelsToLearnFromGuild = tonumber(Perams.GuildLevelToLearnSkillTo) - Perams.GuildLevelToLearnSkillFrom
+				--Note ("Debug: Perams.NumberOfLevelsToLearnFromGuild: " .. Perams.NumberOfLevelsToLearnFromGuild)
+				
+				Perams.XPCostGldLrnSkillToTarget = wildcards.XPCostGldLrnSkillToTarget
+				--Note ("Debug: Perams.XPCostGldLrnSkillToTarget: " .. Perams.XPCostGldLrnSkillToTarget)
+				
+				Perams.XPCostToGuildLearnOneLevel = (Perams.XPCostGldLrnSkillToTarget/Perams.NumberOfLevelsToLearnFromGuild)
+				--Note ("Debug: Perams.XPCostToGuildLearnOneLevel: " .. Perams.XPCostToGuildLearnOneLevel)
+				
+				SetChanged (true)
+				OnPluginSaveState ()
+				--tprint(Perams)
+			end -- function UpdateGuildTaughtTarget
+			function OnPluginInstall ()
+				LoadPerams ()
+
+			end -- function OnPluginInstall			
+			function LoadPerams ()
+				Note ("Loading perameters ...")
+				assert (loadstring (GetVariable ("Perams") or "")) ()
+				
+				if (Perams.XPCostGldLrnSkillToTarget == nil) then
+					Note ("Debug: Not loaded. Creating Perams:")
+					Perams = {
+						XPCostGldLrnSkillToTarget = 0,
+						MoneyToGldLrnSkillToTarget = 0,
+						SkillToLearnFromGuild = "",
+						GuildLevelToLearnSkillFrom = 0,
+						GuildLevelToLearnSkillTo = 0,
+						NumberOfLevelsToLearnFromGuild = 0,
+						XPCostToSelfTeachNextLevel = 0,
+						SkillToSelfTeach = "",
+						XPPercentProgressTowardsSelfTeachTarget = 0,
+						SetChanged (true)
+					}
+					OnPluginSaveState ()
+				end -- if 
+				--tprint (Perams)	
+			end -- function LoadPerams
+			
+			function OnPluginSaveState ()
+				--tprint (Perams)	
+				--Note ("Debug: Saving Advancer Perameters...")
+				SetVariable ("Perams", "Perams = " .. serialize.save_simple (Perams))
+				
+			end -- function OnPluginSaveState
+			
+			function ShowPerams ()
+				tprint (Perams)
+			end -- function ShowPerams 
+			
+			function ClearSelfTaught ()
+					Perams = {
+						XPCostGldLrnSkillToTarget = 0,
+						MoneyToGldLrnSkillToTarget = 0,
+						SkillToLearnFromGuild = "",
+						GuildLevelToLearnSkillFrom = 0,
+						GuildLevelToLearnSkillTo = 0,
+						NumberOfLevelsToLearnFromGuild = 0,
+						XPCostToSelfTeachNextLevel = 0,
+						SkillToSelfTeach = "",
+						XPPercentProgressTowardsSelfTeachTarget = 0,
+					}
+					OnPluginSaveState ()
+					Note ("Debug: Self teach cleared.")
+			end -- function ClearSelfTaught
+		]]>
+	</script> 
+
+</muclient>
