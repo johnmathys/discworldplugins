@@ -14,7 +14,7 @@
 	purpose="To keep track of stock for rare item delivery."
 	date_written="2019-04-26 08:51:38"
 	requires="4.00"
-	version="1.07"
+	version="1.08"
 	save_state="y"
 	sequence="1"
 	>
@@ -93,6 +93,8 @@
 				-	Double invoke of frimble rareloot gather complete
 			1.07
 				-	1.06 fixed
+			1.08
+				-	1.05 actually implemented
 			
 			TODO:
 			
@@ -641,14 +643,19 @@
 			--tprint (ShoppingList)
 			for k, v in pairs (ShoppingList) do
 				if (v == 0) then
-					ColourNote("red", "black", "" .. k .. " : " .. v .. "")
+					--ColourNote("red", "black", "" .. k .. " : " .. v .. "")
+					Hyperlink ("Minimap item " .. k, "Minimap item " .. k .. ": " .. v, "Minimap item " .. k, "red", "black", 0)
 				elseif  (v == 1) then
-					world.ColourNote ("orange", "black", k .. " : " .. v)
+					--world.ColourNote ("orange", "black", k .. " : " .. v)
+					Hyperlink ("Minimap item " .. k, "Minimap item " .. k .. ": " .. v, "Minimap item " .. k, "orange", "black", 0)
 				elseif  (v == 2) then
-					world.ColourNote ("purple", "black", k .. " : " .. v)
+					--world.ColourNote ("purple", "black", k .. " : " .. v)
+					Hyperlink ("Minimap item " .. k, "Minimap item " .. k .. ": " .. v, "Minimap item " .. k, "purple", "black", 0)
 				else
-					Note (k .. " : " .. v)
+					--Note (k .. " : " .. v)
+					Hyperlink ("Minimap item " .. k, "Minimap item " .. k .. ": " .. v, "Minimap item " .. k, "green", "black", 0)
 				end -- if 
+				Note("")
 				ShoppingListItemCount = ShoppingListItemCount + 1
 			end -- for
 			Note ("Total types of item to acquire: " .. ShoppingListItemCount)
