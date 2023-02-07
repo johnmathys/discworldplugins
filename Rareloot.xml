@@ -14,7 +14,7 @@
 	purpose="To keep track of stock for rare item delivery."
 	date_written="2019-04-26 08:51:38"
 	requires="4.00"
-	version="1.05"
+	version="1.07"
 	save_state="y"
 	sequence="1"
 	>
@@ -88,9 +88,12 @@
 				-	Match on rareitems without a, an a pair of etc.
 			1.04	Fix bug where last shoppinglist item didn't reset the nickname correctly
 			1.05
-				-	Hyperlink each shoppinglist item to invoke minimap item <thing>
+				-	Hyperlink each shoppinglist item to invoke minimap item <thing> - not yet implemented
 			1.06
 				-	Double invoke of frimble rareloot gather complete
+			1.07
+				-	1.06 fixed
+			
 			TODO:
 			
 
@@ -392,8 +395,8 @@
 	  -- set all stock to 0
 	  ZeroStockMap ()
 	  -- send alias gtiff glance things in furniture;frimble rareloot gather complete;unalias gtiff
-	  Send ("alias gtiff glance things in furniture;frimble rareloot gather complete;unalias gtiff")
-	  Send ("alias gtiff glance things in furniture;frimble rareloot gather complete;unalias gtiff")
+	  Send ("alias gtiff glance things in furniture;frimble rareloot gather complete;frimble rareloot gather complete;unalias gtiff")
+	  
 	  
 	  -- send gtiff
 	  Send ("gtiff")
