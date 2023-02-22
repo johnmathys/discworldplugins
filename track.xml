@@ -26,6 +26,11 @@ highlight the current track phrase. Usage:
 	track add <item>		Add an item to tracked items
 	track remove <item>		Remove item from tracked items
 	track clear				Clear all tracked items
+
+
+TODO:
+	*	Add details on what's needed and how to use the plugin on load
+		
 ]]>
 </description>
 

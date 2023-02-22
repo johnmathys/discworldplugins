@@ -24,6 +24,13 @@ Rent comes out every 9 RW days, or 27 Disc days
 You have 19335Rh 118s in your account.
 Rent excess is 18526Rh, which is enough for 23.90 Disc, or 7.07 months rent.
 
+TODO:
+  * Add details on what's needed and how to use the plugin on load
+    * Single bank account for all properties to keep it simple
+  * Parameterise rent owed to depersonalise and remove need to change code to adapt
+    * Parameter: Rent currency
+    * Parameter: Rent amount
+
 ]]>
 </description>
 

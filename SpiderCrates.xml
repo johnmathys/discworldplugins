@@ -19,6 +19,9 @@
 <description trim="y">
 <![CDATA[
 Track prying open and investigation of crates in Copperhead mines.
+
+TODO:
+	*	Add details on what's needed and how to use the plugin on load
 ]]>
 </description>
 

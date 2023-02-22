@@ -26,6 +26,11 @@
 
       stealstart   - reports totals so far and resets all counts to 0
       stealreport  - reports totals so far. Does not reset counts.
+
+
+TODO:
+	*	Add details on what's needed and how to use the plugin on load
+   *  Track who the current player is and keep their progress
    ]]>
 </description>
 
