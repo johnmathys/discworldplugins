@@ -14,7 +14,7 @@
 	purpose="To keep track of stock for rare item delivery."
 	date_written="2019-04-26 08:51:38"
 	requires="4.00"
-	version="1.08"
+	version="1.10"
 	save_state="y"
 	sequence="1"
 	>
@@ -95,6 +95,10 @@
 				-	1.06 fixed
 			1.08
 				-	1.05 actually implemented
+			1.09
+				-	In shoppinglist out put add link to get at most one of the item from furniture
+			1.10
+				-	Removed huge fruit covered hat and added peach straw sunhat
 			
 			TODO:
 			
@@ -456,7 +460,7 @@
 		["grey woollen gown"]=0,
 		["hessian robe"]=0,
 		["horsehair-crested bronze helm"]=0,
-		["huge fruit covered hat"]=0,
+		["peach straw sunhat"]=0,
 		["jiann"]=0,
 		["kogake tabi"]=0,
 		["laced sandals"]=0,
@@ -545,7 +549,7 @@
 			local HighlightFiveStock = "" -- lightpink
 			
 			for k, v in pairs (RareItemsMap) do
-				if (v <= Perams.MinStock) then
+				if (v < Perams.MinStock) then
 					ShoppingList[k] = v
 				end -- if out of stock
 				-- Change colour highlighting 0: red, 1: orange: 2: yellow 3: purple 4: 5+: aquamarine
@@ -655,6 +659,8 @@
 					--Note (k .. " : " .. v)
 					Hyperlink ("Minimap item " .. k, "Minimap item " .. k .. ": " .. v, "Minimap item " .. k, "green", "black", 0)
 				end -- if 
+				Tell (" | ")
+				Hyperlink ("get at most 1 " .. k .. " from furniture","gamf " .. k,"get 1 " .. k, "green", "black", 0)
 				Note("")
 				ShoppingListItemCount = ShoppingListItemCount + 1
 			end -- for
@@ -779,7 +785,7 @@
 				NicknameShoppingListEnabled = true,				
 			}
 		end -- if 
-		Perams.AllRareLoot = "zxcvbnm|abacus|aikuchi dagger|AMCW badge|amulet of confession|beaded belly chain|begging tin|black bandana|black cotton dress|black lace shawl|black silk zubon|black sowrong|blue kerchief|blue obi|boxing ring|bright copper armband|bright copper necklet|brown felt hat|clump of golden chains|cotton socks|crescent moon shield|curved sword|dark blue tricorn|dark green obi|dark skirt|deluxe lockpick|dirty grey robe|dusty blue himation|fancy thobe|filigree hairpin|fouled nightshirt|frayed trousers|freshwater pearl bracelet|gold-trimmed obi|greasy white apron|green linen gown|green smock|green trousers|green wool shirt|grey pleated skirt|grey woollen gown|hessian robe|horsehair-crested bronze helm|hot fudge sundae|huge fruit covered hat|kogake tabi|lacy bloomers|lamb chop|leaf-bladed dagger|leather protective|leather shield strap|lobster cracker|maze toe ring|newt bangle|okobo|old green cloak|old shirt|old worn cane|oyster knife|pair of cotton socks|pair of dentist's trousers|pair of frayed trousers|pair of green trousers|jiann|pair of kogake tabi|pair of laced sandals|pair of old trousers|pair of peach pumps|pair of purple-black trousers|pair of torn trousers|pair of white boxer shorts with red polka-dots|pair of yellow braces|palm frond hat|pirate's shirt|plain linen kilt|plain white cotton blouse|plain white thobe|ptourist pturban|push-up breastplate|red and green spotted mushroom|ripped shirt|rough hessian trousers|rubber apron|rubber chicken|sexy white linen loincloth|shimmering fish scale bodysuit|shiny blue ribbon|short-sleeved white cotton shirt|sickly yellow robe|small badge|small ruby ring|startling green dress|Tacticus Academy tie|torn trousers|wolf pelt|yellow ribbon|yellow smock|white cotton bodice|white smock|mnbvcxz"
+		Perams.AllRareLoot = "zxcvbnm|abacus|aikuchi dagger|AMCW badge|amulet of confession|beaded belly chain|begging tin|black bandana|black cotton dress|black lace shawl|black silk zubon|black sowrong|blue kerchief|blue obi|boxing ring|bright copper armband|bright copper necklet|brown felt hat|clump of golden chains|cotton socks|crescent moon shield|curved sword|dark blue tricorn|dark green obi|dark skirt|deluxe lockpick|dirty grey robe|dusty blue himation|fancy thobe|filigree hairpin|fouled nightshirt|frayed trousers|freshwater pearl bracelet|gold-trimmed obi|greasy white apron|green linen gown|green smock|green trousers|green wool shirt|grey pleated skirt|grey woollen gown|hessian robe|horsehair-crested bronze helm|hot fudge sundae|peach straw sunhat|kogake tabi|lacy bloomers|lamb chop|leaf-bladed dagger|leather protective|leather shield strap|lobster cracker|maze toe ring|newt bangle|okobo|old green cloak|old shirt|old worn cane|oyster knife|pair of cotton socks|pair of dentist's trousers|pair of frayed trousers|pair of green trousers|jiann|pair of kogake tabi|pair of laced sandals|pair of old trousers|pair of peach pumps|pair of purple-black trousers|pair of torn trousers|pair of white boxer shorts with red polka-dots|pair of yellow braces|palm frond hat|pirate's shirt|plain linen kilt|plain white cotton blouse|plain white thobe|ptourist pturban|push-up breastplate|red and green spotted mushroom|ripped shirt|rough hessian trousers|rubber apron|rubber chicken|sexy white linen loincloth|shimmering fish scale bodysuit|shiny blue ribbon|short-sleeved white cotton shirt|sickly yellow robe|small badge|small ruby ring|startling green dress|Tacticus Academy tie|torn trousers|wolf pelt|yellow ribbon|yellow smock|white cotton bodice|white smock|mnbvcxz"
 		--tprint (Perams)	
 	end -- function LoadPerams
 	
